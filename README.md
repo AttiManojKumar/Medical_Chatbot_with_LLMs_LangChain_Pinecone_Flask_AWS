@@ -4,7 +4,7 @@
 ### STEPS:
 clone the repository
 ```bash
-git clonehttps://github.com/AttiManojKumar/Medical_Chatbot_with_LLMs_LangChain_Pinecone_Flask_AWS.git
+git clone https://github.com/AttiManojKumar/Medical_Chatbot_with_LLMs_LangChain_Pinecone_Flask_AWS.git
 ```
 
 
