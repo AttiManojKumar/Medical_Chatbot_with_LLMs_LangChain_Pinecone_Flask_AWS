@@ -55,8 +55,9 @@ jobs:
 
       - name: Run Docker Image to serve users
         run: |
-          docker stop medicalbot || true
-          docker rm medicalbot || true
+          docker ps -q --filter "publish=8080" | xargs -r docker stop
+          docker ps -aq --filter "publish=8080" | xargs -r docker rm
+
           docker run -d --name medicalbot \
             -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
