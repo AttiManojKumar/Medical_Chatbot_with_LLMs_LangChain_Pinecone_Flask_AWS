@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="chat-shell">
+        <section class="chat-panel" aria-label="Medical chatbot">
+            <header class="chat-header">
+                <div class="brand-mark" aria-hidden="true">
+                    <span></span>
+                </div>
+                <div>
+                    <p class="eyebrow">Healthcare Assistant</p>
+                    <h1>Medical Chatbot</h1>
+                </div>
+                <div class="status-pill">
+                    <span aria-hidden="true"></span>
+                    Online
+                </div>
+            </header>
+
+            <div class="notice" role="note">
+                This assistant can help summarize medical information, but it is not a substitute for professional diagnosis or emergency care.
+            </div>
+
+            <div id="chatBox" class="chat-box" aria-live="polite">
+                <article class="message bot-message">
+                    <div class="avatar" aria-hidden="true">M</div>
+                    <div class="bubble">
+                        <p>Hello. Tell me your symptoms or ask a health question, and I will share general medical information from the knowledge base.</p>
+                    </div>
+                </article>
+            </div>
+
+            <form id="chatForm" class="chat-form" autocomplete="off">
+                <label class="sr-only" for="messageInput">Message</label>
+                <textarea id="messageInput" name="msg" rows="1" placeholder="Type your medical question..." required></textarea>
+                <button type="submit" aria-label="Send message">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3.7 20.3 21 12 3.7 3.7 3 10l10 2-10 2 .7 6.3z"></path>
+                    </svg>
+                </button>
+            </form>
+        </section>
+    </main>
+
+    <script>
+        const chatForm = document.getElementById("chatForm");
+        const chatBox = document.getElementById("chatBox");
+        const messageInput = document.getElementById("messageInput");
+
+        function scrollToLatest() {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function addMessage(text, sender) {
+            const message = document.createElement("article");
+            message.className = `message ${sender}-message`;
+
+            const avatar = document.createElement("div");
+            avatar.className = "avatar";
+            avatar.setAttribute("aria-hidden", "true");
+            avatar.textContent = sender === "user" ? "You" : "M";
+
+            const bubble = document.createElement("div");
+            bubble.className = "bubble";
+
+            const paragraph = document.createElement("p");
+            paragraph.textContent = text;
+            bubble.appendChild(paragraph);
+
+            if (sender === "user") {
+                message.appendChild(bubble);
+                message.appendChild(avatar);
+            } else {
+                message.appendChild(avatar);
+                message.appendChild(bubble);
+            }
+
+            chatBox.appendChild(message);
+            scrollToLatest();
+            return message;
+        }
+
+        function setLoading() {
+            const loading = addMessage("Checking the medical knowledge base...", "bot");
+            loading.classList.add("loading-message");
+            return loading;
+        }
+
+        function resizeInput() {
+            messageInput.style.height = "auto";
+            messageInput.style.height = `${Math.min(messageInput.scrollHeight, 140)}px`;
+        }
+
+        messageInput.addEventListener("input", resizeInput);
+
+        messageInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                chatForm.requestSubmit();
+            }
+        });
+
+        chatForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const userText = messageInput.value.trim();
+            if (!userText) {
+                return;
+            }
+
+            addMessage(userText, "user");
+            messageInput.value = "";
+            resizeInput();
+            messageInput.focus();
+
+            const loading = setLoading();
+
+            try {
+                const response = await fetch("/get", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+                    },
+                    body: new URLSearchParams({ msg: userText })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Request failed");
+                }
+
+                const botText = await response.text();
+                loading.remove();
+                addMessage(botText || "I could not find an answer for that question.", "bot");
+            } catch (error) {
+                loading.remove();
+                addMessage("Sorry, I could not reach the chatbot service. Please try again.", "bot");
+            }
+        });
+
+        resizeInput();
+    </script>
+</body>
+</html>
